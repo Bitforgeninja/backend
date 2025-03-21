@@ -30,7 +30,7 @@ app.use(express.json());
 const allowedOrigins = [
   process.env.FRONTEND_URL?.trim() ||
     "https://consumer-delta.vercel.app",
-    "http://admin-kappa-snowy.vercel.app",
+    "https://admin-kappa-snowy.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
 ];
