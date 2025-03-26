@@ -1,7 +1,11 @@
 import express from 'express';
 import Market from '../models/marketModel.js';
-import { getMarketResults } from '../controllers/marketController.js';
-import auth from '../middleware/auth.js'
+import {
+  getMarketResults,
+  updateMarketDetails,
+  updateMarketStatus
+} from '../controllers/marketController.js';
+import auth from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -12,7 +16,7 @@ const router = express.Router();
  */
 router.get('/available', async (req, res) => {
   try {
-    const markets = await Market.find({ isBettingOpen: true }); // Fetch open markets only
+    const markets = await Market.find({ isBettingOpen: true });
     res.status(200).json(markets);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -21,12 +25,12 @@ router.get('/available', async (req, res) => {
 
 /**
  * @route   GET /api/markets
- * @desc    Fetch all markets (open or closed)
+ * @desc    Fetch all markets
  * @access  Public
  */
 router.get('/', async (req, res) => {
   try {
-    const markets = await Market.find(); // Fetch all markets
+    const markets = await Market.find();
     res.status(200).json(markets);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -66,5 +70,18 @@ router.get("/get-market-id/:marketName", async (req, res) => {
   }
 });
 
-export default router;
+/**
+ * @route   PUT /api/admin/markets/edit/:marketId
+ * @desc    Update full market details (name, time, flags)
+ * @access  Admin
+ */
+router.put("/edit/:marketId", auth, updateMarketDetails);
 
+/**
+ * @route   PATCH /api/admin/markets/status/:marketId
+ * @desc    Update betting open/close status
+ * @access  Admin
+ */
+router.patch("/status/:marketId", auth, updateMarketStatus);
+
+export default router;
