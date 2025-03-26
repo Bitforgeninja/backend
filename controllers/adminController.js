@@ -315,7 +315,8 @@ export const declareResult = async (req, res) => {
 
     try {
       // ✅ Call the new function to store market results
-      storeMarketResult(market, new Date(), openResult, closeResult);
+      const resultDate = req.body.date ? new Date(req.body.date) : new Date();
+      storeMarketResult(market, resultDate, openResult, closeResult);
       console.log("✅ Markets Results Stored Successfully")
     }
     catch {
@@ -696,3 +697,4 @@ export const addUser = async (req, res) => {
     res.status(500).json({ message: "Server error while adding user" });
   }
 };
+
