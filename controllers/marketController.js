@@ -1,5 +1,5 @@
 import Market from '../models/marketModel.js';
-import MarketResult from '../models/marketResultModel.js'
+import MarketResult from '../models/marketResultModel.js';
 
 // Fetch all markets
 export const getAllMarkets = async (req, res) => {
@@ -21,30 +21,30 @@ export const getOpenMarkets = async (req, res) => {
   }
 };
 
-// ✅ Update Market Status Properly
+// Update market betting status only
 export const updateMarketStatus = async (req, res) => {
   try {
     const { marketId } = req.params;
-    const { isBettingOpen } = req.body; // Remove openBetting from request
+    const { isBettingOpen } = req.body;
 
-    console.log("📢 Updating market:", marketId, "isBettingOpen:", isBettingOpen);
+    console.log("📢 Updating market status:", marketId, "->", isBettingOpen);
 
     const market = await Market.findOneAndUpdate(
       { marketId },
-      { 
-        $set: { 
-          isBettingOpen: isBettingOpen, // ✅ Update isBettingOpen
-          openBetting: isBettingOpen    // ✅ Ensure openBetting always matches isBettingOpen
-        } 
+      {
+        $set: {
+          isBettingOpen,
+          openBetting: isBettingOpen,
+        }
       },
-      { new: true } // ✅ Return the updated document
+      { new: true }
     );
 
     if (!market) {
       return res.status(404).json({ message: '❌ Market not found' });
     }
 
-    console.log("✅ Market Updated Successfully:", market);
+    console.log("✅ Market status updated:", market);
     res.status(200).json({ message: '✅ Market status updated successfully', market });
   } catch (error) {
     console.error("❌ Error updating market status:", error);
@@ -52,11 +52,41 @@ export const updateMarketStatus = async (req, res) => {
   }
 };
 
+// ✅ New: Update all market details
+export const updateMarketDetails = async (req, res) => {
+  try {
+    const { marketId } = req.params;
+    const updateData = req.body;
 
+    console.log("📢 Updating market:", marketId);
+    console.log("🛠️ Update payload:", updateData);
 
+    const market = await Market.findOneAndUpdate(
+      { marketId },
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!market) {
+      console.warn("❌ Market not found:", marketId);
+      return res.status(404).json({ message: '❌ Market not found' });
+    }
+
+    console.log("✅ Market updated successfully:", market);
+    res.status(200).json({ message: '✅ Market details updated successfully', market });
+  } catch (error) {
+    console.error("❌ Error updating market details:", error);
+    res.status(500).json({
+      message: "❌ Server error updating market details",
+      error: error.message,
+    });
+  }
+};
+
+// Get results for a market
 export const getMarketResults = async (req, res) => {
   try {
-    const { marketId } = req.params; // Extract marketId from URL
+    const { marketId } = req.params;
 
     if (!marketId) {
       return res.status(400).json({ message: "Market ID is required." });
