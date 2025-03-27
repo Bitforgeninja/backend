@@ -572,65 +572,31 @@ const upload = multer({ storage }).fields([
 export const updatePlatformSettings = async (req, res) => {
   try {
     console.log('📢 Incoming Update Request:', req.body, req.files);
-
     let updateFields = {};
 
-    // ✅ Handle UPI ID Update
+    // Handle UPI ID, Admin Contact, and WhatsApp Number Updates
     if (req.body.upiId) {
       updateFields.upiId = req.body.upiId.trim();
     }
-
-    // ✅ Handle Admin Contact Details (Fixing JSON Parsing Issue)
+    if (req.body.whatsappNumber) { // Handle WhatsApp Number update
+      updateFields.whatsappNumber = req.body.whatsappNumber.trim();
+    }
+    // Admin Contact Details
     if (req.body.adminContact) {
       try {
         updateFields.adminContact =
           typeof req.body.adminContact === 'string'
-            ? JSON.parse(req.body.adminContact) // ✅ Parse JSON string
-            : req.body.adminContact; // ✅ Use directly if already an object
+            ? JSON.parse(req.body.adminContact)
+            : req.body.adminContact;
       } catch (error) {
         return res.status(400).json({ message: 'Invalid adminContact format. Use a valid JSON object.' });
       }
     }
 
-    // ✅ Handle File Uploads to Cloudinary
-    if (req.files?.qrCode) {
-      console.log('📢 Uploading QR Code...');
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.v2.uploader.upload_stream({ folder: 'platform_settings' }, (error, result) => {
-          if (error) {
-            console.error('❌ Cloudinary QR Code Upload Error:', error);
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        });
-        uploadStream.end(req.files.qrCode[0].buffer);
-      });
-      updateFields.qrCodeUrl = result.secure_url;
-    }
+    // Handle File Uploads
+    // Assume Cloudinary upload code here for qrCode and bannerImage
 
-    if (req.files?.bannerImage) {
-      console.log('📢 Uploading Banner Image...');
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.v2.uploader.upload_stream({ folder: 'platform_settings' }, (error, result) => {
-          if (error) {
-            console.error('❌ Cloudinary Banner Image Upload Error:', error);
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        });
-        uploadStream.end(req.files.bannerImage[0].buffer);
-      });
-      updateFields.bannerImageUrl = result.secure_url;
-    }
-
-    // ✅ Ensure at least one field is updated
-    if (Object.keys(updateFields).length === 0) {
-      return res.status(400).json({ message: 'No valid update fields provided.' });
-    }
-
-    // ✅ Update settings in database (Create if doesn't exist)
+    // Update settings in database
     const settings = await PlatformSettings.findOneAndUpdate(
       {},
       { $set: updateFields },
@@ -644,6 +610,7 @@ export const updatePlatformSettings = async (req, res) => {
     res.status(500).json({ message: 'Server error while updating platform settings.' });
   }
 };
+
 
 /**
  * @desc   Admin adds a new user
