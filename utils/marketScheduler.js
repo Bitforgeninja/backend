@@ -33,8 +33,8 @@ export function scheduleMarketTasks() {
 
         const updates = {};
 
-        // ✅ Open both bettings at 6:00 AM
-        if (now.format('HH:mm') === '06:00') {
+        // ✅ Open both bettings at 00:00 AM
+        if (now.format('HH:mm') === '00:00') {
           if (!market.isBettingOpen) {
             updates.isBettingOpen = true;
             console.log(`   ✅ Opening full market betting`);
