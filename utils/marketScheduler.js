@@ -29,7 +29,7 @@ export function scheduleMarketTasks() {
         const closeDeadline = dayjs.tz(`${todayDateStr} ${market.closeTime}`, 'YYYY-MM-DD hh:mm A', 'Asia/Kolkata').subtract(10, 'minute');
 
         console.log(`\n📍 Market: ${market.name}`);
-        console.log(`   🔓 Starts At: 6:00 AM`);
+        console.log(`   🔓 Starts At: 00:00 AM`);
         console.log(`   🕛 Open Time: ${market.openTime} → Close Open Betting At: ${openDeadline.format('hh:mm A')}`);
         console.log(`   🕖 Close Time: ${market.closeTime} → Close Market At: ${closeDeadline.format('hh:mm A')}`);
         console.log(`   ⏱ Current Time: ${nowIST.format('hh:mm A')}`);
