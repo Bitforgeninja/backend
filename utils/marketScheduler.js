@@ -1,63 +1,65 @@
-// utils/marketScheduler.js
 import cron from 'node-cron';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
 import Market from '../models/marketModel.js';
 
+// Extend dayjs with required plugins
 dayjs.extend(customParseFormat);
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export function scheduleMarketTasks() {
   console.log('🕐 Initializing market betting scheduler...');
 
   cron.schedule('* * * * *', async () => {
     try {
-      const now = dayjs();
-      console.log(`\n📅 [${now.format('YYYY-MM-DD HH:mm:ss')}] Running market scheduler...`);
+      const now = dayjs(); // Server time
+      const nowIST = dayjs().tz('Asia/Kolkata'); // Convert to IST
+      const todayDateStr = nowIST.format('YYYY-MM-DD');
+
+      console.log(`\n📅 [${nowIST.format('YYYY-MM-DD HH:mm:ss')} IST] Running market scheduler...`);
 
       const markets = await Market.find();
       console.log(`🔍 Found ${markets.length} markets to check...`);
 
       for (let market of markets) {
-        const todayStr = dayjs().format('YYYY-MM-DD');
-
-        const marketStartsAt = dayjs(`${todayStr} 6:00 AM`, 'YYYY-MM-DD hh:mm A'); // All markets start at 6:00 AM
-        const openDeadline = dayjs(`${todayStr} ${market.openTime}`, 'YYYY-MM-DD hh:mm A').subtract(10, 'minute');
-        const closeDeadline = dayjs(`${todayStr} ${market.closeTime}`, 'YYYY-MM-DD hh:mm A').subtract(10, 'minute');
+        const openDeadline = dayjs.tz(`${todayDateStr} ${market.openTime}`, 'YYYY-MM-DD hh:mm A', 'Asia/Kolkata').subtract(10, 'minute');
+        const closeDeadline = dayjs.tz(`${todayDateStr} ${market.closeTime}`, 'YYYY-MM-DD hh:mm A', 'Asia/Kolkata').subtract(10, 'minute');
 
         console.log(`\n📍 Market: ${market.name}`);
         console.log(`   🔓 Starts At: 6:00 AM`);
         console.log(`   🕛 Open Time: ${market.openTime} → Close Open Betting At: ${openDeadline.format('hh:mm A')}`);
         console.log(`   🕖 Close Time: ${market.closeTime} → Close Market At: ${closeDeadline.format('hh:mm A')}`);
-        console.log(`   ⏱ Current Time: ${now.format('hh:mm A')}`);
+        console.log(`   ⏱ Current Time: ${nowIST.format('hh:mm A')}`);
         console.log(`   🔐 isBettingOpen: ${market.isBettingOpen} | 🟢 openBetting: ${market.openBetting}`);
 
         const updates = {};
 
-        // ✅ Open both bettings at 6:00 AM
-        if (now.format('HH:mm') === '06:00') {
-          if (!market.isBettingOpen) {
+        // ✅ Auto-reset: Reopen markets between 12:00 AM and 2:00 AM IST
+        const hour = nowIST.hour();
+        if (hour >= 0 && hour < 2) {
+          if (!market.isBettingOpen || !market.openBetting) {
             updates.isBettingOpen = true;
-            console.log(`   ✅ Opening full market betting`);
-          }
-          if (!market.openBetting) {
             updates.openBetting = true;
-            console.log(`   ✅ Opening open betting`);
+            console.log(`   🌙 Auto-reset: Reopening betting window (00:00–02:00 IST)`);
           }
         }
-        
 
-        // ✅ Close open betting at (openTime - 10 minutes)
-        if (now.isAfter(openDeadline) && market.openBetting) {
+        // ✅ Close open betting (10 minutes before open time)
+        if (nowIST.isAfter(openDeadline) && market.openBetting) {
           updates.openBetting = false;
           console.log(`   🚫 Closing open betting`);
         }
 
-        // ✅ Close full market at (closeTime - 10 minutes)
-        if (now.isAfter(closeDeadline) && market.isBettingOpen) {
+        // ✅ Close full market (10 minutes before close time)
+        if (nowIST.isAfter(closeDeadline) && market.isBettingOpen) {
           updates.isBettingOpen = false;
           console.log(`   ❌ Closing full market betting`);
         }
 
+        // ✅ Save updates if any
         if (Object.keys(updates).length > 0) {
           await Market.findByIdAndUpdate(market._id, { $set: updates });
           console.log(`   🔄 Updated market flags:`, updates);
