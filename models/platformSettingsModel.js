@@ -4,7 +4,7 @@ const platformSettingsSchema = new mongoose.Schema({
   qrCodeUrl: { type: String, required: true },
   upiId: { type: String, required: true },
   bannerImageUrl: { type: String, required: true },
-  whatsAppNumber:: { type: String, required: true }, // New field for WhatsApp number
+  whatsAppNumber: { type: String, required: true }, // New field for WhatsApp number
   adminContact: {
     name: { type: String, required: true },
     email: { type: String, required: true },
